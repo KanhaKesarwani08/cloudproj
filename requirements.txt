@@ -1,0 +1,8 @@
+fastapi
+uvicorn[standard]
+jinja2
+python-multipart
+firebase-admin
+# sqlalchemy # For ORM, if needed later
+# psycopg2-binary # For PostgreSQL, if needed later
+# google-cloud-sqlconnector # For Cloud SQL connection, if needed later 
