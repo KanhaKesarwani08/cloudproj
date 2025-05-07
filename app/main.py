@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Request, status
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, Response
 import uvicorn
 
 # Import routers
@@ -49,6 +49,11 @@ async def read_root(request: Request):
     Serves the main landing page.
     """
     return templates.TemplateResponse("index.html", {"request": request, "title": "Budget Tracker"})
+
+# Add route to handle favicon requests gracefully
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon():
+    return Response(status_code=204) # Return No Content
 
 # Redirects for convenience if user hits old paths
 @app.get("/login", include_in_schema=False)

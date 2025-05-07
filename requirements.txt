@@ -2,12 +2,12 @@ fastapi
 uvicorn[standard]
 jinja2
 python-multipart
-firebase-admin
+# firebase-admin # REMOVED - Not using Firebase Auth
 SQLAlchemy
 psycopg2-binary # For PostgreSQL
-cloud-sql-python-connector
+google-cloud-sql-python-connector # For Cloud SQL connection
 pydantic-settings
 passlib[bcrypt]
 python-jose[cryptography]
-# sqlalchemy # For ORM, if needed later
-# google-cloud-sqlconnector # For Cloud SQL connection, if needed later 
+email-validator
+python-dotenv

@@ -1,14 +1,96 @@
 {% include 'partials/header.html' %}
 
-<section>
-    <h2>Welcome to Your Personal Budget Tracker!</h2>
-    <p>Take control of your finances with our simple and intuitive app.</p>
-    <p>Please <a href="{{ url_for('login_page') }}">login</a> or register to get started.</p>
-    <!-- More marketing content or features overview can go here -->
-</section>
+<div class="hero-section">
+    <div class="hero-content">
+        <h1>Personal Budget Tracker</h1>
+        <p class="hero-subtitle">Take control of your finances with our simple and intuitive expense tracking solution</p>
+        <div class="hero-actions">
+            <a href="{{ url_for('login_page') }}" class="btn btn-primary">Get Started</a>
+            <a href="{{ url_for('register_page') }}" class="btn btn-outline">Create Account</a>
+        </div>
+    </div>
+</div>
 
-<div id="firebaseui-auth-container"></div> <!-- If using FirebaseUI -->
-<div id="loader">Loading...</div> <!-- For FirebaseUI loading state -->
+<main class="landing-page">
+    <section class="features-section">
+        <h2>Why Choose Our Budget Tracker?</h2>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">📊</div>
+                <h3>Visual Analytics</h3>
+                <p>Track your spending patterns with interactive charts and graphs. See where your money goes at a glance.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🏷️</div>
+                <h3>Category Management</h3>
+                <p>Organize expenses by categories. Create custom labels to match your spending habits.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📱</div>
+                <h3>Mobile Friendly</h3>
+                <p>Access your budget tracker anywhere, anytime. Fully responsive design works on all devices.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🔒</div>
+                <h3>Secure & Private</h3>
+                <p>Your financial data is encrypted and protected. We prioritize your privacy and security.</p>
+            </div>
+        </div>
+    </section>
 
+    <section class="how-it-works">
+        <h2>How It Works</h2>
+        <div class="steps-container">
+            <div class="step">
+                <div class="step-number">1</div>
+                <h3>Create an Account</h3>
+                <p>Sign up for free in seconds. No credit card required.</p>
+            </div>
+            <div class="step">
+                <div class="step-number">2</div>
+                <h3>Add Your Expenses</h3>
+                <p>Easily log your daily expenses with our simple form.</p>
+            </div>
+            <div class="step">
+                <div class="step-number">3</div>
+                <h3>Track Progress</h3>
+                <p>Monitor your spending habits with real-time charts and insights.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="benefits-section">
+        <h2>Key Benefits</h2>
+        <div class="benefits-grid">
+            <div class="benefit-item">
+                <h3>💡 Smart Insights</h3>
+                <p>Get intelligent insights about your spending patterns and areas for improvement.</p>
+            </div>
+            <div class="benefit-item">
+                <h3>📈 Progress Tracking</h3>
+                <p>Monitor your financial goals and track your progress over time.</p>
+            </div>
+            <div class="benefit-item">
+                <h3>🔄 Regular Updates</h3>
+                <p>We continuously improve our platform with new features and updates.</p>
+            </div>
+            <div class="benefit-item">
+                <h3>💪 Easy to Use</h3>
+                <p>Intuitive interface makes expense tracking a breeze.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="cta-section">
+        <div class="cta-content">
+            <h2>Ready to Take Control of Your Finances?</h2>
+            <p>Join thousands of users who are already managing their expenses effectively.</p>
+            <div class="cta-buttons">
+                <a href="{{ url_for('login_page') }}" class="btn btn-primary">Start Tracking Now</a>
+                <a href="{{ url_for('register_page') }}" class="btn btn-outline">Learn More</a>
+            </div>
+        </div>
+    </section>
+</main>
 
 {% include 'partials/footer.html' %} 

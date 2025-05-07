@@ -3,7 +3,7 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.responses import HTMLResponse, RedirectResponse # Removed JSONResponse for now, token endpoint returns Token model
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
-from typing import Any
+from typing import Any, Optional
 
 from app.core import security # For create_access_token and verify_access_token
 from app.core.config import settings

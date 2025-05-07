@@ -1,41 +1,85 @@
 {% include 'partials/header.html' %}
+<link rel="stylesheet" href="{{ url_for('static', path='/css/style.css') }}">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-<section id="addExpense">
-    <h2>Add New Expense</h2>
-    <form id="expenseForm">
-        <div>
-            <label for="description">Description:</label>
-            <input type="text" id="description" name="description" required>
-        </div>
-        <div>
-            <label for="amount">Amount:</label>
-            <input type="number" id="amount" name="amount" step="0.01" required>
-        </div>
-        <div>
-            <label for="category">Category/Label:</label>
-            <input type="text" id="category" name="category" required>
-        </div>
-        <div>
-            <label for="expense_date">Date (YYYY-MM-DD, optional):</label>
-            <input type="date" id="expense_date" name="expense_date">
-        </div>
-        <button type="submit">Add Expense</button>
-        <p id="expenseMessage" style="margin-top: 10px;"></p>
-    </form>
-</section>
+<header>
+    <div class="header-content">
+        <h1>Budget Tracker</h1>
+        <nav>
+            <a href="/" class="{{ 'active' if request.path == '/' }}">Home</a>
+            <a href="/expenses/dashboard" class="{{ 'active' if request.path == '/expenses/dashboard' }}">Dashboard</a>
+            <a href="/auth/login" id="navLoginLink">Login</a>
+            <a href="/auth/register" id="navRegisterLink">Register</a>
+            <a href="#" id="navLogoutLink" style="display: none;">Logout</a>
+            <span id="userInfo"></span>
+        </nav>
+    </div>
+</header>
 
-<section id="expenseListSection">
-    <h2>Your Expenses</h2>
-    <ul id="expenseList">
-        <!-- JS will populate this -->
-        <li id="noExpensesMessage" style="display:none;">No expenses recorded yet.</li>
-    </ul>
-</section>
+<div class="dashboard-container">
+    <div class="main-content">
+        <section id="addExpense" class="card">
+            <div class="card-header">
+                <h2>Add New Expense</h2>
+            </div>
+            <div class="card-body">
+                <form id="expenseForm">
+                    <div class="form-group">
+                        <label for="description">Description:</label>
+                        <input type="text" id="description" name="description" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="amount">Amount:</label>
+                        <input type="number" id="amount" name="amount" step="0.01" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="category">Category/Label:</label>
+                        <input type="text" id="category" name="category" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="expense_date">Date:</label>
+                        <input type="date" id="expense_date" name="expense_date">
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit">Add Expense</button>
+                    </div>
+                    <p id="expenseMessage" style="margin-top: 10px;"></p>
+                </form>
+            </div>
+        </section>
 
-<section id="spendingGraph" style="display: none;"> <!-- Initially hidden, show if data available -->
-    <h2>Spending Overview</h2>
-    <canvas id="myChart"></canvas>
-</section>
+        <section id="expenseListSection" class="card">
+            <div class="card-header">
+                <h2>Your Expenses</h2>
+            </div>
+            <div class="card-body">
+                <ul id="expenseList">
+                    <li id="noExpensesMessage" style="display:none;">No expenses recorded yet.</li>
+                </ul>
+            </div>
+        </section>
+    </div>
+
+    <aside class="sidebar-content">
+        <section id="categoryChart" class="card">
+            <div class="card-header">
+                <h2>Expenses by Category</h2>
+            </div>
+            <div class="card-body chart-container">
+                <canvas id="pieChart"></canvas>
+            </div>
+        </section>
+
+        <section id="monthlyChart" class="card">
+            <div class="card-header">
+                <h2>Monthly Expenses</h2>
+            </div>
+            <div class="card-body chart-container">
+                <canvas id="lineChart"></canvas>
+            </div>
+        </section>
+    </aside>
+</div>
 
 {% include 'partials/footer.html' %}
 

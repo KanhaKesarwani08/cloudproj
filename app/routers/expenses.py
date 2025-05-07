@@ -10,25 +10,23 @@ from app.services import budget_service as expense_service
 # from app.services import user_service # Not directly needed here if using get_current_active_user
 from app.models import expense as expense_schema
 from app.db import models as db_models
-from app.routers.auth import get_current_active_user # Import the new dependency
+from app.routers.auth import get_current_active_user # Import the dependency
 
 router = APIRouter(
     prefix="/expenses",
     tags=["expenses"],
-    dependencies=[Depends(get_current_active_user)], # Apply auth to all routes in this router
+    # dependencies=[Depends(get_current_active_user)], # REMOVED from router level
     responses={404: {"description": "Not found"}}
 )
 
 templates = Jinja2Templates(directory="app/templates")
 
 @router.get("/dashboard", response_class=HTMLResponse)
-async def view_dashboard(request: Request, db: Session = Depends(get_db), current_user: db_models.User = Depends(get_current_active_user)):
-    user_expenses = expense_service.get_expenses_for_user(db, user_id=current_user.id)
-    return templates.TemplateResponse("dashboard.html", {
-        "request": request, 
-        "expenses": user_expenses, 
-        "user_email": current_user.email 
-    })
+async def view_dashboard(request: Request):
+    """Serves the dashboard HTML page. Authentication is checked client-side."""
+    # Removed Depends(get_current_active_user) and db session dependency
+    # The template will be rendered, and JS will handle fetching data if logged in.
+    return templates.TemplateResponse("dashboard.html", {"request": request})
 
 @router.post("/add", response_class=RedirectResponse)
 async def add_expense(
@@ -38,7 +36,7 @@ async def add_expense(
     category: str = Form(...),
     expense_date_str: Optional[str] = Form(None),
     db: Session = Depends(get_db),
-    current_user: db_models.User = Depends(get_current_active_user)
+    current_user: db_models.User = Depends(get_current_active_user) # Added dependency here
 ):
     try:
         parsed_date = date.fromisoformat(expense_date_str) if expense_date_str else date.today()
@@ -60,7 +58,7 @@ async def api_read_expenses(
     skip: int = 0, 
     limit: int = 100, 
     db: Session = Depends(get_db),
-    current_user: db_models.User = Depends(get_current_active_user)
+    current_user: db_models.User = Depends(get_current_active_user) # Added dependency here
 ):
     db_expenses = expense_service.get_expenses_for_user(db, user_id=current_user.id, skip=skip, limit=limit)
     return [expense_schema.ExpenseInDB.model_validate(exp) for exp in db_expenses]
@@ -69,7 +67,7 @@ async def api_read_expenses(
 async def api_read_expense(
     expense_id: int, 
     db: Session = Depends(get_db),
-    current_user: db_models.User = Depends(get_current_active_user)
+    current_user: db_models.User = Depends(get_current_active_user) # Added dependency here
 ):
     db_expense = expense_service.get_expense_by_id(db, expense_id=expense_id, user_id=current_user.id)
     if db_expense is None:
@@ -81,7 +79,7 @@ async def api_update_expense(
     expense_id: int, 
     expense_update: expense_schema.ExpenseUpdate, 
     db: Session = Depends(get_db),
-    current_user: db_models.User = Depends(get_current_active_user)
+    current_user: db_models.User = Depends(get_current_active_user) # Added dependency here
 ):
     updated_expense = expense_service.update_expense(
         db, expense_id=expense_id, expense_update_data=expense_update, user_id=current_user.id
@@ -94,7 +92,7 @@ async def api_update_expense(
 async def api_delete_expense(
     expense_id: int, 
     db: Session = Depends(get_db),
-    current_user: db_models.User = Depends(get_current_active_user)
+    current_user: db_models.User = Depends(get_current_active_user) # Added dependency here
 ):
     success = expense_service.delete_expense(db, expense_id=expense_id, user_id=current_user.id)
     if not success:

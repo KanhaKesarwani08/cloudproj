@@ -1,5 +1,5 @@
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, Session as SQLAlchemySession # Renamed to avoid conflict from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import declarative_base, sessionmaker, Session as SQLAlchemySession # Renamed to avoid conflict from sqlalchemy.ext.declarative import declarative_base
 from typing import Generator
 
 from app.core.config import settings

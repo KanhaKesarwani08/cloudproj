@@ -2,7 +2,7 @@
 
 <section id="loginSection">
     <h2>Login</h2>
-    <form id="loginForm"> <!-- Will be handled by JS -->
+    <form id="loginForm"> <!-- JS will handle submission via button click -->
         <div>
             <label for="email">Email (Username):</label>
             <input type="email" id="email" name="username" required> <!-- name=username for OAuth2PasswordRequestForm -->
@@ -11,7 +11,7 @@
             <label for="password">Password:</label>
             <input type="password" id="password" name="password" required>
         </div>
-        <button type="submit">Login</button>
+        <button type="button" id="loginButton">Login</button> <!-- Changed type to button, added ID -->
         <p id="authError" style="color: red; margin-top: 10px;"></p>
     </form>
     <p style="margin-top: 15px;">Don't have an account? <a href="{{ url_for('register_page') }}">Register here</a>.</p>
