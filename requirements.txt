@@ -3,6 +3,11 @@ uvicorn[standard]
 jinja2
 python-multipart
 firebase-admin
+SQLAlchemy
+psycopg2-binary # For PostgreSQL
+cloud-sql-python-connector
+pydantic-settings
+passlib[bcrypt]
+python-jose[cryptography]
 # sqlalchemy # For ORM, if needed later
-# psycopg2-binary # For PostgreSQL, if needed later
 # google-cloud-sqlconnector # For Cloud SQL connection, if needed later 

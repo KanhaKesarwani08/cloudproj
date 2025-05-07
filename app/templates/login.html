@@ -1,32 +1,20 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Budget Tracker</title>
-    <link rel="stylesheet" href="{{ url_for('static', path='/css/style.css') }}">
-</head>
-<body>
-    <header>
-        <h1>Login</h1>
-    </header>
-    <main>
-        <form id="loginForm">
-            <div>
-                <label for="username">Username:</label>
-                <input type="text" id="username" name="username" required>
-            </div>
-            <div>
-                <label for="password">Password:</label>
-                <input type="password" id="password" name="password" required>
-            </div>
-            <button type="submit">Login</button>
-        </form>
-        <p>Don't have an account? <a href="#">Register here</a></p> <!-- Placeholder -->
-    </main>
-    <footer>
-        <p>&copy; 2024 Budget Tracker App</p>
-    </footer>
-    <script src="{{ url_for('static', path='/js/script.js') }}"></script>
-</body>
-</html> 
+{% include 'partials/header.html' %}
+
+<section id="loginSection">
+    <h2>Login</h2>
+    <form id="loginForm"> <!-- Will be handled by JS -->
+        <div>
+            <label for="email">Email (Username):</label>
+            <input type="email" id="email" name="username" required> <!-- name=username for OAuth2PasswordRequestForm -->
+        </div>
+        <div>
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" required>
+        </div>
+        <button type="submit">Login</button>
+        <p id="authError" style="color: red; margin-top: 10px;"></p>
+    </form>
+    <p style="margin-top: 15px;">Don't have an account? <a href="{{ url_for('register_page') }}">Register here</a>.</p>
+</section>
+
+{% include 'partials/footer.html' %} 

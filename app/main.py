@@ -7,7 +7,32 @@ import uvicorn
 # Import routers
 from .routers import auth, expenses
 
+# Import for table creation
+from app.db.session import engine, Base #, SessionLocal (not needed for create_all directly)
+from app.db import models # Ensure models are imported so Base knows about them
+
+# Function to create DB tables
+def create_db_tables():
+    print("Attempting to create database tables...")
+    try:
+        Base.metadata.create_all(bind=engine)
+        print("Database tables created successfully (if they didn't already exist).")
+    except Exception as e:
+        print(f"Error creating database tables: {e}")
+
 app = FastAPI(title="Budget Tracker API")
+
+@app.on_event("startup")
+async def on_startup():
+    print("Application startup...")
+    create_db_tables()
+    # Initialize Firebase Admin SDK (already done in firebase_auth.py when it's imported)
+    # if not firebase_admin._apps:
+    #     try:
+    #         firebase_admin.initialize_app()
+    #         print("Firebase Admin SDK initialized on startup.")
+    #     except Exception as e:
+    #         print(f"Error initializing Firebase Admin SDK on startup: {e}")
 
 # Mount static files (CSS, JS)
 # Ensure the directory path is correct relative to where main.py is run from.

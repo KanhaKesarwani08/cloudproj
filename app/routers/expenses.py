@@ -1,117 +1,102 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, Form, status
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from typing import List, Optional
 from datetime import date
+from sqlalchemy.orm import Session
 
-# Placeholder for actual service and models
-# from ...models import expense as expense_model
-# from ...services import budget_service
-# from ..auth import get_current_active_user # Assuming you have this for authentication
+from app.db.session import get_db
+from app.services import budget_service as expense_service
+# from app.services import user_service # Not directly needed here if using get_current_active_user
+from app.models import expense as expense_schema
+from app.db import models as db_models
+from app.routers.auth import get_current_active_user # Import the new dependency
 
 router = APIRouter(
     prefix="/expenses",
     tags=["expenses"],
-    # dependencies=[Depends(get_current_active_user)], # Protect all expense routes
+    dependencies=[Depends(get_current_active_user)], # Apply auth to all routes in this router
     responses={404: {"description": "Not found"}}
 )
 
 templates = Jinja2Templates(directory="app/templates")
 
-# In-memory placeholder for expenses (replace with DB interaction)
-fake_expenses_db = []
-expense_id_counter = 0
-
 @router.get("/dashboard", response_class=HTMLResponse)
-async def view_dashboard(request: Request):
-    """Serves the main dashboard page where users can see and add expenses."""
-    # In a real app, fetch user-specific expenses
-    # current_user = Depends(get_current_active_user) # Get current user
-    # user_expenses = budget_service.get_expenses_for_user(user_id=current_user.id)
-    return templates.TemplateResponse("dashboard.html", {"request": request, "expenses": fake_expenses_db})
+async def view_dashboard(request: Request, db: Session = Depends(get_db), current_user: db_models.User = Depends(get_current_active_user)):
+    user_expenses = expense_service.get_expenses_for_user(db, user_id=current_user.id)
+    return templates.TemplateResponse("dashboard.html", {
+        "request": request, 
+        "expenses": user_expenses, 
+        "user_email": current_user.email 
+    })
 
-@router.post("/add", response_class=RedirectResponse) # Or return JSON and handle with JS
+@router.post("/add", response_class=RedirectResponse)
 async def add_expense(
-    request: Request, # Needed if you render a template on error or for context
+    request: Request,
     description: str = Form(...),
     amount: float = Form(...),
     category: str = Form(...),
-    expense_date_str: Optional[str] = Form(None) # Keep as string for now
-    # current_user: user_model.UserInDB = Depends(get_current_active_user)
+    expense_date_str: Optional[str] = Form(None),
+    db: Session = Depends(get_db),
+    current_user: db_models.User = Depends(get_current_active_user)
 ):
-    """Handles the submission of a new expense."""
-    global expense_id_counter
-    expense_id_counter += 1
-    
     try:
         parsed_date = date.fromisoformat(expense_date_str) if expense_date_str else date.today()
-    except ValueError:
-        # Handle invalid date format, perhaps redirect with error or return an error response
-        # For now, just default to today
+    except (ValueError, TypeError):
         parsed_date = date.today()
-        print(f"Invalid date format for {expense_date_str}, defaulting to today.")
 
-    new_expense = {
-        "id": expense_id_counter,
-        "description": description,
-        "amount": amount,
-        "category": category,
-        "expense_date": parsed_date,
-        # "owner_id": current_user.id
-    }
-    fake_expenses_db.append(new_expense)
-    print(f"Added expense: {new_expense}") # Log added expense
-    
-    # Redirect to dashboard to see the new expense
-    # In a more JS-heavy frontend, you might return JSON and update the page dynamically.
-    return RedirectResponse(url="/dashboard", status_code=status.HTTP_303_SEE_OTHER) # 303 for POST-redirect-GET
+    expense_data = expense_schema.ExpenseCreate(
+        description=description, 
+        amount=amount, 
+        category=category, 
+        expense_date=parsed_date
+    )
+    created_expense = expense_service.create_expense(db=db, expense=expense_data, user_id=current_user.id)
+    return RedirectResponse(url="/expenses/dashboard", status_code=status.HTTP_303_SEE_OTHER)
 
 
-# Placeholder API endpoints (would be used by JS or other clients)
+@router.get("/", response_model=List[expense_schema.ExpenseInDB])
+async def api_read_expenses(
+    skip: int = 0, 
+    limit: int = 100, 
+    db: Session = Depends(get_db),
+    current_user: db_models.User = Depends(get_current_active_user)
+):
+    db_expenses = expense_service.get_expenses_for_user(db, user_id=current_user.id, skip=skip, limit=limit)
+    return [expense_schema.ExpenseInDB.model_validate(exp) for exp in db_expenses]
 
-# @router.get("/", response_model=List[expense_model.ExpenseInDB])
-# async def read_expenses(
-#     skip: int = 0, 
-#     limit: int = 100, 
-#     # current_user: user_model.UserInDB = Depends(get_current_active_user)
-# ):
-#     # expenses = budget_service.get_expenses(user_id=current_user.id, skip=skip, limit=limit)
-#     # return expenses
-#     return fake_expenses_db[skip : skip + limit]
+@router.get("/{expense_id}", response_model=expense_schema.ExpenseInDB)
+async def api_read_expense(
+    expense_id: int, 
+    db: Session = Depends(get_db),
+    current_user: db_models.User = Depends(get_current_active_user)
+):
+    db_expense = expense_service.get_expense_by_id(db, expense_id=expense_id, user_id=current_user.id)
+    if db_expense is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Expense not found")
+    return expense_schema.ExpenseInDB.model_validate(db_expense)
 
-# @router.get("/{expense_id}", response_model=expense_model.ExpenseInDB)
-# async def read_expense(
-#     expense_id: int, 
-#     # current_user: user_model.UserInDB = Depends(get_current_active_user)
-# ):
-#     # db_expense = budget_service.get_expense(expense_id=expense_id, user_id=current_user.id)
-#     # if db_expense is None:
-#     #     raise HTTPException(status_code=404, detail="Expense not found")
-#     # return db_expense
-#     for expense in fake_expenses_db:
-#         if expense["id"] == expense_id:
-#             return expense
-#     raise HTTPException(status_code=404, detail="Expense not found")
+@router.put("/{expense_id}", response_model=expense_schema.ExpenseInDB)
+async def api_update_expense(
+    expense_id: int, 
+    expense_update: expense_schema.ExpenseUpdate, 
+    db: Session = Depends(get_db),
+    current_user: db_models.User = Depends(get_current_active_user)
+):
+    updated_expense = expense_service.update_expense(
+        db, expense_id=expense_id, expense_update_data=expense_update, user_id=current_user.id
+    )
+    if updated_expense is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Expense not found or not authorized to update")
+    return expense_schema.ExpenseInDB.model_validate(updated_expense)
 
-# @router.put("/{expense_id}", response_model=expense_model.ExpenseInDB)
-# async def update_expense_item(
-#     expense_id: int, 
-#     expense: expense_model.ExpenseUpdate, 
-#     # current_user: user_model.UserInDB = Depends(get_current_active_user)
-# ):
-#     # updated_expense = budget_service.update_expense(expense_id=expense_id, expense_update=expense, user_id=current_user.id)
-#     # if updated_expense is None:
-#     #     raise HTTPException(status_code=404, detail="Expense not found or not owned by user")
-#     # return updated_expense
-#     raise HTTPException(status_code=501, detail="Update not implemented yet.")
-
-# @router.delete("/{expense_id}", status_code=status.HTTP_204_NO_CONTENT)
-# async def delete_expense_item(
-#     expense_id: int, 
-#     # current_user: user_model.UserInDB = Depends(get_current_active_user)
-# ):
-#     # success = budget_service.delete_expense(expense_id=expense_id, user_id=current_user.id)
-#     # if not success:
-#     #     raise HTTPException(status_code=404, detail="Expense not found or not owned by user")
-#     # return
-#     raise HTTPException(status_code=501, detail="Delete not implemented yet.") 
+@router.delete("/{expense_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def api_delete_expense(
+    expense_id: int, 
+    db: Session = Depends(get_db),
+    current_user: db_models.User = Depends(get_current_active_user)
+):
+    success = expense_service.delete_expense(db, expense_id=expense_id, user_id=current_user.id)
+    if not success:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Expense not found or not authorized to delete")
+    return 

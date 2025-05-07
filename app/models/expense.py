@@ -24,4 +24,4 @@ class ExpenseInDB(ExpenseBase):
     created_at: datetime # To track when the record was created
 
     class Config:
-        orm_mode = True # or from_attributes = True for Pydantic v2 
+        from_attributes = True # Changed from orm_mode for Pydantic v2 

@@ -1,32 +1,14 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ title }}</title>
-    <link rel="stylesheet" href="{{ url_for('static', path='/css/style.css') }}">
-</head>
-<body>
-    <header>
-        <!-- Include header partial here if created -->
-        <h1>Welcome to the Budget Tracker</h1>
-        <nav>
-            <a href="/">Home</a>
-            <a href="/login">Login</a> <!-- Placeholder -->
-            <a href="/dashboard">Dashboard</a> <!-- Placeholder, requires login -->
-        </nav>
-    </header>
+{% include 'partials/header.html' %}
 
-    <main>
-        <p>Manage your finances effectively!</p>
-        <!-- Content will go here -->
-    </main>
+<section>
+    <h2>Welcome to Your Personal Budget Tracker!</h2>
+    <p>Take control of your finances with our simple and intuitive app.</p>
+    <p>Please <a href="{{ url_for('login_page') }}">login</a> or register to get started.</p>
+    <!-- More marketing content or features overview can go here -->
+</section>
 
-    <footer>
-        <!-- Include footer partial here if created -->
-        <p>&copy; 2024 Budget Tracker App</p>
-    </footer>
+<div id="firebaseui-auth-container"></div> <!-- If using FirebaseUI -->
+<div id="loader">Loading...</div> <!-- For FirebaseUI loading state -->
 
-    <script src="{{ url_for('static', path='/js/script.js') }}"></script>
-</body>
-</html> 
+
+{% include 'partials/footer.html' %} 

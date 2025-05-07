@@ -1,62 +1,42 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - Budget Tracker</title>
-    <link rel="stylesheet" href="{{ url_for('static', path='/css/style.css') }}">
-    <!-- We might use a charting library later, e.g., Chart.js -->
-    <!-- <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> -->
-</head>
-<body>
-    <header>
-        <h1>Dashboard</h1>
-        <nav>
-            <a href="/">Home</a>
-            <a href="#" id="logoutButton">Logout</a> <!-- Placeholder -->
-        </nav>
-    </header>
+{% include 'partials/header.html' %}
 
-    <main>
-        <section id="addExpense">
-            <h2>Add New Expense</h2>
-            <form id="expenseForm">
-                <div>
-                    <label for="description">Description:</label>
-                    <input type="text" id="description" name="description" required>
-                </div>
-                <div>
-                    <label for="amount">Amount:</label>
-                    <input type="number" id="amount" name="amount" step="0.01" required>
-                </div>
-                <div>
-                    <label for="category">Category/Label:</label>
-                    <input type="text" id="category" name="category" required>
-                </div>
-                <button type="submit">Add Expense</button>
-            </form>
-        </section>
+<section id="addExpense">
+    <h2>Add New Expense</h2>
+    <form id="expenseForm">
+        <div>
+            <label for="description">Description:</label>
+            <input type="text" id="description" name="description" required>
+        </div>
+        <div>
+            <label for="amount">Amount:</label>
+            <input type="number" id="amount" name="amount" step="0.01" required>
+        </div>
+        <div>
+            <label for="category">Category/Label:</label>
+            <input type="text" id="category" name="category" required>
+        </div>
+        <div>
+            <label for="expense_date">Date (YYYY-MM-DD, optional):</label>
+            <input type="date" id="expense_date" name="expense_date">
+        </div>
+        <button type="submit">Add Expense</button>
+        <p id="expenseMessage" style="margin-top: 10px;"></p>
+    </form>
+</section>
 
-        <section id="expenseList">
-            <h2>Your Expenses</h2>
-            <!-- Expenses will be listed here, possibly fetched via JS -->
-            <ul>
-                <li>Placeholder Expense 1 - $50 - Groceries</li>
-                <li>Placeholder Expense 2 - $20 - Transport</li>
-            </ul>
-        </section>
+<section id="expenseListSection">
+    <h2>Your Expenses</h2>
+    <ul id="expenseList">
+        <!-- JS will populate this -->
+        <li id="noExpensesMessage" style="display:none;">No expenses recorded yet.</li>
+    </ul>
+</section>
 
-        <section id="spendingGraph">
-            <h2>Spending Overview</h2>
-            <!-- Graph will be rendered here, e.g., using a canvas element -->
-            <canvas id="myChart"></canvas>
-        </section>
-    </main>
+<section id="spendingGraph" style="display: none;"> <!-- Initially hidden, show if data available -->
+    <h2>Spending Overview</h2>
+    <canvas id="myChart"></canvas>
+</section>
 
-    <footer>
-        <p>&copy; 2024 Budget Tracker App</p>
-    </footer>
+{% include 'partials/footer.html' %}
 
-    <script src="{{ url_for('static', path='/js/script.js') }}"></script>
-</body>
-</html> 
+<script src="{{ url_for('static', path='/js/script.js') }}"></script> 

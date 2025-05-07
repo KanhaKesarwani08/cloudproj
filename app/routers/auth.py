@@ -1,10 +1,16 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Request, Header
-from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
+from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi.responses import HTMLResponse, RedirectResponse # Removed JSONResponse for now, token endpoint returns Token model
 from fastapi.templating import Jinja2Templates
+from sqlalchemy.orm import Session
+from typing import Any
 
-# Import the Firebase token verification logic
-from app.core.firebase_auth import verify_firebase_token, get_current_user
-# from ..models import user as user_model # Keep for potential future use (e.g. storing user profiles)
+from app.core import security # For create_access_token and verify_access_token
+from app.core.config import settings
+from app.services import user_service
+from app.db.session import get_db
+from app.db import models as db_models # SQLAlchemy models
+from app.models import user as user_schema # Pydantic schemas
 
 router = APIRouter(
     prefix="/auth",
@@ -14,84 +20,99 @@ router = APIRouter(
 
 templates = Jinja2Templates(directory="app/templates")
 
+# OAuth2PasswordBearer will look for the token in the Authorization header
+# tokenUrl is the URL that the client will use to get the token (our /auth/token endpoint)
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
+
 @router.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request):
-    """Serves the HTML page where FirebaseUI or custom Firebase JS will handle login."""
     return templates.TemplateResponse("login.html", {"request": request, "title": "Login"})
 
-@router.post("/token")
-async def backend_token_verification(id_token: str = Header(None, alias="Authorization")):
-    """
-    Receives a Firebase ID token from the client (in Authorization header), 
-    verifies it, and can be used to establish a backend session or confirm authentication.
-    The client should send the token as "Bearer <FIREBASE_ID_TOKEN>".
-    """
-    if id_token is None:
+@router.get("/register", response_class=HTMLResponse)
+async def register_page(request: Request):
+    return templates.TemplateResponse("register.html", {"request": request, "title": "Register"})
+
+@router.post("/register", response_model=user_schema.User)
+async def process_registration(
+    request: Request, # Added request for potential future use with templates
+    user_in: user_schema.UserCreate, # Using Pydantic model for request body
+    db: Session = Depends(get_db)
+):
+    db_user = user_service.get_user_by_email(db, email=user_in.email)
+    if db_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email already registered."
+        )
+    created_user = user_service.create_user(db=db, user=user_in)
+    # Consider automatically logging in the user here by creating a token,
+    # or redirecting to login with a success message.
+    # For now, returning the created user data (excluding password).
+    return user_schema.User.model_validate(created_user)
+
+
+@router.post("/token", response_model=user_schema.Token)
+async def login_for_access_token(
+    form_data: OAuth2PasswordRequestForm = Depends(), 
+    db: Session = Depends(get_db)
+):
+    user = user_service.authenticate_user(
+        db, email=form_data.username, password=form_data.password
+    )
+    if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authorization token not provided",
+            detail="Incorrect email or password",
+            headers={"WWW-Authenticate": "Bearer"},
         )
+    access_token = security.create_access_token(
+        data={"sub": user.email} # "sub" is a standard claim for the subject (user identifier)
+    )
+    return {"access_token": access_token, "token_type": "bearer"}
+
+
+async def get_current_user_from_token(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> Optional[db_models.User]:
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    payload = security.verify_access_token(token, credentials_exception)
+    if payload is None: # Should not happen if verify_access_token raises on failure
+        raise credentials_exception
+        
+    email: Optional[str] = payload.get("sub")
+    if email is None:
+        raise credentials_exception # Subject claim (email) missing from token
     
-    if id_token.startswith("Bearer "):
-        token = id_token.split("Bearer ")[1]
-    else:
-        token = id_token # Assume token is passed directly if no Bearer prefix
-        # raise HTTPException(
-        #     status_code=status.HTTP_401_UNAUTHORIZED,
-        #     detail="Invalid token format. Must be Bearer token.",
-        # )
+    user = user_service.get_user_by_email(db, email=email)
+    if user is None:
+        raise credentials_exception # User not found in DB for the given email in token
+    return user
 
-    try:
-        decoded_token = await verify_firebase_token(token=token) # Manually pass token here
-        # At this point, token is verified.
-        # You could create a session, or look up/create a user in your own DB.
-        # For now, just return the decoded claims (like UID, email).
-        return {
-            "message": "Token verified successfully", 
-            "uid": decoded_token.get("uid"), 
-            "email": decoded_token.get("email")
-        }
-    except HTTPException as e:
-        # Re-raise HTTPException from verify_firebase_token
-        raise e
-    except Exception as e:
-        # Catch any other unexpected errors
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"An unexpected error occurred during token verification: {str(e)}"
-        )
+async def get_current_active_user(current_user: db_models.User = Depends(get_current_user_from_token)) -> db_models.User:
+    if not current_user.is_active:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Inactive user")
+    return current_user
 
-@router.get("/logout") # This will be largely a client-side concern with Firebase
-async def logout_page(request: Request):
+
+@router.get("/users/me", response_model=user_schema.User)
+async def read_current_user_profile(
+    current_user: db_models.User = Depends(get_current_active_user)
+):
     """
-    Firebase handles logout primarily on the client-side.
-    This endpoint could clear any backend session cookies if they were set.
-    For now, it just redirects to home.
+    Protected endpoint. Fetches the profile of the currently authenticated user.
+    """
+    return user_schema.User.model_validate(current_user)
+
+@router.get("/logout") # This is mostly a client-side action for JWT
+async def logout_route(request: Request):
+    """
+    For JWT, logout is primarily handled by the client deleting the token.
+    This endpoint can exist for consistency or if server-side session revocation were added.
+    Redirects to home page.
     """
     response = RedirectResponse(url="/", status_code=status.HTTP_302_FOUND)
-    # If you were setting a backend session cookie, delete it here:
-    # response.delete_cookie("backend_session_id")
-    return response
-
-# Example of a protected route that uses the Firebase token for authentication
-@router.get("/users/me")
-async def read_current_user_from_firebase(current_user_claims: dict = Depends(get_current_user)):
-    """
-    Protected endpoint. Requires a valid Firebase ID token in the Authorization header.
-    The `get_current_user` dependency will verify the token and return its claims.
-    """
-    # `current_user_claims` will be the dictionary of claims from the verified Firebase ID token (uid, email, etc.)
-    # You might want to fetch more user details from your database using current_user_claims['uid']
-    return {"message": "You are authenticated!", "user_info": current_user_claims}
-
-# Registration is now handled by FirebaseUI on the client-side.
-# The /register GET and POST endpoints can be removed or commented out.
-
-# @router.get("/register", response_class=HTMLResponse)
-# async def register_page(request: Request):
-#     # return templates.TemplateResponse("register.html", {"request": request})
-#     raise HTTPException(status_code=501, detail="Registration handled by Firebase on client-side.")
-
-# @router.post("/register")
-# async def register_user(username: str = Form(...), email: str = Form(...), password: str = Form(...)):
-#     raise HTTPException(status_code=501, detail="Registration handled by Firebase on client-side.") 
+    # If using cookies for token (not recommended for Bearer tokens), delete here.
+    # response.delete_cookie(key="access_token") 
+    return response 
